@@ -1,4 +1,10 @@
 # mplite
+
+![Build status](https://github.com/root-11/mplite/actions/workflows/python-package.yml/badge.svg)
+[![Code coverage](https://codecov.io/gh/root-11/mplite/branch/master/graph/badge.svg)](https://codecov.io/gh/root-11/mplite)
+[![Downloads](https://pepy.tech/badge/mplite)](https://pepy.tech/project/mplite)
+[![Downloads](https://pepy.tech/badge/mplite/month)](https://pepy.tech/project/mplite/month)
+
 A light weight wrapper for pythons multiprocessing module that makes multiprocessing easy.
 
 In case anyone is looking for a very easy way to use multiprocessing with args and kwargs, here is a neat wrapper as [mplite](https://pypi.org/project/mplite/):
