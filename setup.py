@@ -11,7 +11,7 @@ with open('requirements.txt', 'r') as fi:
 
 setup(
     name="mplite",
-    version="1.0.0",
+    version="1.0.1",
     url="https://github.com/root-11/mplite",
     license="MIT",
     author="root-11",
@@ -21,7 +21,7 @@ setup(
     keywords=keywords,
     packages=["mplite"],
     include_package_data=True,
-    data_files=[(".", ["LICENSE", "README.md"])],
+    data_files=[(".", ["LICENSE", "README.md", "requirements.txt"])],
     platforms="any",
     install_requires=requirements,
     classifiers=[
