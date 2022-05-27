@@ -10,7 +10,7 @@ with open('requirements.txt', 'r') as fi:
     requirements = [v.rstrip('\n') for v in fi.readlines()]
 
 setup(
-    name="tablite",
+    name="mplite",
     version="1.0.0",
     url="https://github.com/root-11/mplite",
     license="MIT",
@@ -31,6 +31,8 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
 )
 
