@@ -6,6 +6,7 @@ In case anyone is looking for a very easy way to use multiprocessing with args a
 The [test](https://github.com/root-11/mplite/blob/main/tests/test_basics.py) is also the showcase:
 ```
 from mplite import TaskManager, Task
+import time
 
 # first create the function that each cpu should work on individually.
 def f(*args, **kwargs):
@@ -14,17 +15,16 @@ def f(*args, **kwargs):
     return args[0]
 
 # Next create the main function you'd like to run everything from:
-def mr_main():
-
-    task_list = []   # create a tasklist and populate it with tasks
-    for n in list(range(10)*5:
+def main():
+    tasks = []   # create a tasklist and populate it with tasks
+    for n in list(range(10))*5:
         t = Task(f, *(n/10,), **{'hello': n})  
-        task_list.append(t)
+        tasks.append(t)
 
     with TaskManager() as tm:
         results = tm.execute(tasks)
 
 if __name__ == "__main__":
-    mr_main()
+    main()
 ```
 
