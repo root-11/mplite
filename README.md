@@ -30,7 +30,20 @@ def main():
     with TaskManager() as tm:
         results = tm.execute(tasks)
 
+    print(results)
+
 if __name__ == "__main__":
     main()
 ```
+Note that tasks can't crash. In case of exceptions during
+task execution, the traceback is captured and the compute
+core continues to execute the next task.
 
+Also, if you want to check that the inputs to the task
+are formed correctly, you can do the check from the interpreter,
+by calling `.execute()` on the task:
+
+```
+>>> t = Task(f, *(1,2,3), **{"this":42})
+>>> t.execute()
+```
