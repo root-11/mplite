@@ -37,7 +37,7 @@ def test_bad_inputs():
         assert True
 
     try:
-        Task(f, *"bad input")
+        Task(f, "bad input")
         assert False, "*args must be None or a tuple"
     except TypeError:
         assert True
