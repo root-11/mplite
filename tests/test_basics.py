@@ -28,6 +28,27 @@ def f(*args, **kwargs):
 def broken(*args, **kwargs):
     raise NotImplementedError("this task must fail!")
 
+    
+def test_bad_inputs():
+    try:
+        Task(1)
+        assert False, "f must be a callable"
+    except TypeError:
+        assert True
 
+    try:
+        Task(f, *"bad input")
+        assert False, "*args must be None or a tuple"
+    except TypeError:
+        assert True
+        
+    try:
+        Task(f, **("bad input")
+        assert False, "**kwargs must be a dict"
+    except TypeError:
+        assert True
+        
+        
+        
 if __name__ == "__main__":
     test_alpha()
