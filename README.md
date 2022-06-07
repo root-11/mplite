@@ -1,7 +1,7 @@
 # mplite
 
 ![Build status](https://github.com/root-11/mplite/actions/workflows/python-package.yml/badge.svg)
-[![Code coverage](https://codecov.io/gh/root-11/mplite/branch/master/graph/badge.svg)](https://codecov.io/gh/root-11/mplite)
+[![codecov](https://codecov.io/gh/root-11/mplite/branch/main/graph/badge.svg?token=QRBR8W5AB3)](https://codecov.io/gh/root-11/mplite)
 [![Downloads](https://pepy.tech/badge/mplite)](https://pepy.tech/project/mplite)
 [![Downloads](https://pepy.tech/badge/mplite/month)](https://pepy.tech/project/mplite/month)
 
