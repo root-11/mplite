@@ -43,7 +43,7 @@ def test_bad_inputs():
         assert True
         
     try:
-        Task(f, **("bad input")
+        Task(f, **("bad input"))
         assert False, "**kwargs must be a dict"
     except TypeError:
         assert True
