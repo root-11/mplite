@@ -14,10 +14,13 @@ jobs:
         python-version: 3.9
     - name: 'generate report'
       run: |
-        pip install coverage
-        coverage run -m unittest
+        python -m pip install --upgrade pip
+        python -m pip install flake8 pytest
+        python -m pip install coverage
+        python -m pip install -r requirements.txt
+        coverage run -m pytest
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
-        flags: unittests
+        flags: pytest
         fail_ci_if_error: true
