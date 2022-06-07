@@ -15,7 +15,7 @@ def test_alpha():
         print(f"did nothing for {end-start} seconds, producing {results} result")
         
         # add more tasks to the same pool of workers:
-        tasks = [Task(broken, *(i,) for i in range(3)]
+        tasks = [Task(broken, *(i,)) for i in range(3)]
         results = tm.execute(tasks)
         for result in results:
             print(result)  # this will print tracebacks!
