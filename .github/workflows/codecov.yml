@@ -18,7 +18,7 @@ jobs:
         python -m pip install flake8 pytest
         python -m pip install coverage
         python -m pip install -r requirements.txt
-        coverage run -m pytest
+        coverage run --concurrency=multiprocessing -m pytest
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
