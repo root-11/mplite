@@ -88,6 +88,10 @@ class Task(object):
         if not isinstance(kwargs, dict):
             raise TypeError(f"{kwargs} is not a dict")
         self.kwargs = kwargs
+    def __str__(self) -> str:
+        return f"Task(f={self.f.__name__}, *{self.args}, **{self.kwargs})"
+    def __repr__(self) -> str:
+        return f"Task(f={self.f.__name__}, *{self.args}, **{self.kwargs})"
     def execute(self):
         try:
             return self.f(*self.args,**self.kwargs)
