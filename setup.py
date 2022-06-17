@@ -14,7 +14,7 @@ with open('requirements.txt', 'r') as fi:
 
 setup(
     name="mplite",
-    version="1.0.2",
+    version="1.0.3",
     url="https://github.com/root-11/mplite",
     license="MIT",
     author="root-11",
