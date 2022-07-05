@@ -120,9 +120,11 @@ NotImplementedError: this task must fail!
 
 ```
 
-Note that tasks can't crash. In case of exceptions during
+Note that tasks **can't crash**! In case of exceptions during
 task execution, the traceback is captured and the compute
 core continues to execute the next task.
+
+### How to test worker functions
 
 Also, if you want to check that the inputs to the task
 are formed correctly, you can do the check from the interpreter,
@@ -131,4 +133,83 @@ by calling `.execute()` on the task:
 ```
 >>> t = Task(f, *(1,2,3), **{"this":42})
 >>> t.execute()
+```
+
+### How to handle incremental tasks
+
+From version 1.1.0 it is possible to add tasks incrementally.
+
+Let's say I'd like to solve the pyramid task where I add up all numbers
+
+```
+1+2  3+4  5+6  7+8  9+10
+ =    =    =    =    = 
+ 3 +  7    11 + 15   19
+   =         =       =
+   10        26  +  19
+   =             =
+   10      +     45
+           = 
+          55
+```
+
+This requires that I:
+
+a. create a queue with 1,2,3,...,10
+b. add tasks for the numbers to be added pairwise
+c. receive the result
+d. when I have a pair of numbers submit them AGAIN.
+
+Here is an example of what the code can look like:
+```
+
+def test_incremental_workload():
+    with TaskManager() as tm:       
+        # 1. create initial workload
+        checksum = 55
+        for a in range(1,10,2):
+            t = Task(adder, a, a+1)
+            print(t)
+            tm.submit(t)
+    
+        # 2. create incremental workload
+        a,b = None,None
+        while True:
+            result = tm.take()
+            if result is None:
+                if tm.open_tasks == 0:
+                    break
+                else:
+                    continue
+            
+            if a is None:
+                a = result
+            else:
+                b = result
+            
+            if a and b:
+                t = Task(adder, a,b)
+                print(t)
+                tm.submit(t)
+                a,b = None,None
+
+        print(a,b,flush=True)
+        assert a == checksum or b == checksum,(a,b,checksum)
+
+
+```
+
+Output:
+```
+Task(f=adder, *(1, 2), **{})
+Task(f=adder, *(3, 4), **{})
+Task(f=adder, *(5, 6), **{})
+Task(f=adder, *(7, 8), **{})
+Task(f=adder, *(9, 10), **{})
+Task(f=adder, *(3, 7), **{})
+Task(f=adder, *(11, 15), **{})
+Task(f=adder, *(19, 10), **{})
+Task(f=adder, *(26, 29), **{})
+55 None
+
 ```

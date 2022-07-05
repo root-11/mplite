@@ -32,6 +32,10 @@ def f(*args, **kwargs):
     return args[0]/kwargs['hello']
 
 
+def adder(a,b):
+    return a+b
+
+
 def broken(*args, **kwargs):
     raise NotImplementedError("this task must fail!")
 
@@ -55,7 +59,40 @@ def test_bad_inputs():
     except TypeError:
         assert True
         
+
+def test_incremental_workload():
+    with TaskManager() as tm:       
+        # 1. create initial workload
+        checksum = 55
+        for a in range(1,10,2):
+            t = Task(adder, a, a+1)
+
+            print(t)
+            tm.submit(t)
+    
+        # 2. create incremental workload
+        a,b = None,None
+        while True:
+            result = tm.take()
+            if result is None:
+                if tm.open_tasks == 0:
+                    break
+                else:
+                    continue
+            
+            if a is None:
+                a = result
+            else:
+                b = result
+            
+            if a and b:
+                t = Task(adder, a,b)
+                print(t)
+                tm.submit(t)
+                a,b = None,None
+
+        print(a,b,flush=True)
+        assert a == checksum or b == checksum,(a,b,checksum)
         
+
         
-if __name__ == "__main__":
-    test_alpha()

@@ -6,6 +6,58 @@ from tqdm import tqdm
 import queue
 
 
+class Task(object):
+    def __init__(self, f, *args, **kwargs) -> None:
+        if not callable(f):
+            raise TypeError(f"{f} is not callable")
+        self.f = f
+        if not isinstance(args, tuple):
+            raise TypeError(f"{args} is not a tuple")
+        self.args = args
+        if not isinstance(kwargs, dict):
+            raise TypeError(f"{kwargs} is not a dict")
+        self.kwargs = kwargs
+    def __str__(self) -> str:
+        return f"Task(f={self.f.__name__}, *{self.args}, **{self.kwargs})"
+    def __repr__(self) -> str:
+        return f"Task(f={self.f.__name__}, *{self.args}, **{self.kwargs})"
+    def execute(self):
+        try:
+            return self.f(*self.args,**self.kwargs)
+        except Exception as e:
+            f = io.StringIO()
+            traceback.print_exc(limit=3, file=f)
+            f.seek(0)
+            error = f.read()
+            f.close()
+            return error
+                    
+
+class Worker(multiprocessing.Process):
+    def __init__(self,name,tq,rq):
+        super().__init__(group=None, target=self.update, name=name, daemon=False)
+        self.exit = multiprocessing.Event()
+        self.tq = tq  # workers task queue
+        self.rq = rq  # workers result queue
+    def update(self):
+        while True:
+            try:
+                task = self.tq.get_nowait()
+            except queue.Empty:
+                task = None
+            
+            if task == "stop":
+                self.tq.put_nowait(task)
+                self.exit.set()
+                break
+
+            elif isinstance(task, Task):
+                result = task.execute()
+                self.rq.put(result)
+            else:
+                time.sleep(0.01)
+
+
 class TaskManager(object):
     def __init__(self, cpu_count=None) -> None:
         self._cpus = multiprocessing.cpu_count() if cpu_count is None else cpu_count
@@ -40,6 +92,27 @@ class TaskManager(object):
                 except queue.Empty:
                     time.sleep(0.01)
         return results
+
+    def submit(self, task):
+        """ permits asynchronous submission of tasks. """
+        if not isinstance(task, Task):
+            raise TypeError(f"expected mplite.Task, not {type(task)}")
+        self._open_tasks += 1
+        self.tq.put(task)
+
+    def take(self):
+        """ permits asynchronous retrieval of results """
+        try:
+            result = self.rq.get_nowait()
+            self._open_tasks-=1
+        except queue.Empty:
+            result = None
+        return result
+
+    @property
+    def open_tasks(self):
+        return self._open_tasks
+
     def stop(self):
         for _ in range(self._cpus):
             self.tq.put('stop')
@@ -52,55 +125,6 @@ class TaskManager(object):
             _ = self.rq.get_nowait()
 
 
-class Worker(multiprocessing.Process):
-    def __init__(self,name,tq,rq):
-        super().__init__(group=None, target=self.update, name=name, daemon=False)
-        self.exit = multiprocessing.Event()
-        self.tq = tq  # workers task queue
-        self.rq = rq  # workers result queue
-    def update(self):
-        while True:
-            try:
-                task = self.tq.get_nowait()
-            except queue.Empty:
-                task = None
-            
-            if task == "stop":
-                self.tq.put_nowait(task)
-                self.exit.set()
-                break
-
-            elif isinstance(task, Task):
-                result = task.execute()
-                self.rq.put(result)
-            else:
-                time.sleep(0.01)
 
 
-class Task(object):
-    def __init__(self, f, *args, **kwargs) -> None:
-        if not callable(f):
-            raise TypeError(f"{f} is not callable")
-        self.f = f
-        if not isinstance(args, tuple):
-            raise TypeError(f"{args} is not a tuple")
-        self.args = args
-        if not isinstance(kwargs, dict):
-            raise TypeError(f"{kwargs} is not a dict")
-        self.kwargs = kwargs
-    def __str__(self) -> str:
-        return f"Task(f={self.f.__name__}, *{self.args}, **{self.kwargs})"
-    def __repr__(self) -> str:
-        return f"Task(f={self.f.__name__}, *{self.args}, **{self.kwargs})"
-    def execute(self):
-        try:
-            return self.f(*self.args,**self.kwargs)
-        except Exception as e:
-            f = io.StringIO()
-            traceback.print_exc(limit=3, file=f)
-            f.seek(0)
-            error = f.read()
-            f.close()
-            return error
-                    
 
