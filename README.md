@@ -26,6 +26,13 @@ def f(*args, **kwargs):
     return args[0]/kwargs['hello']
 ```
 
+*2.1. I also add a function that will fail to illustrate that the TaskManager doesn't crash...*
+```
+def broken(*args, **kwargs):
+    raise NotImplementedError("this task must fail!")
+```
+
+
 *3. create the main function you'd like to run everything from:*
 
 ```
