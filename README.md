@@ -162,10 +162,10 @@ Let's say I'd like to solve the pyramid task where I add up all numbers
 
 This requires that I:
 
-a. create a queue with 1,2,3,...,10
-b. add tasks for the numbers to be added pairwise
-c. receive the result
-d. when I have a pair of numbers submit them AGAIN.
+1. create a queue with 1,2,3,...,10
+2. add tasks for the numbers to be added pairwise
+3. receive the result
+4. when I have a pair of numbers submit them AGAIN.
 
 Here is an example of what the code can look like:
 ```
