@@ -220,3 +220,152 @@ Task(f=adder, *(26, 29), **{})
 55 None
 
 ```
+
+Use mplite wisely. Executing each tasks has a certain overhead associated with it. 
+The fewer the number of tasks and the heavier (computationally) each of them the better.
+
+Example with number of calls with a number of iterations in the call:
+```
+def run_calcs_calls(mp_enabled=True, rng=50_000_000, calls = 20):
+    start = time.time()
+    L = []
+    if mp_enabled:
+        with TaskManager() as tm:
+            tasks = []
+            for call in range(1, calls+1):
+                tasks.append(Task(fun, *(call, rng)))
+            L = tm.execute(tasks)
+    else:
+        for call in range(1, calls+1):
+            res = fun(call, rng)
+            L.append(res)
+
+    end = time.time()
+    if mp_enabled:
+        print('mplite - enabled')
+    else:
+        print('mplite - disabled')
+
+    print('time taken: ', end - start)
+    print(L)
+
+
+def fun(call_id, rng):
+    # burn some time iterating thru
+    t = 0
+    for i in range(rng):
+        t = i/call_id
+    return t
+
+def test_mplite_performance():    
+    # change calls and range to see the knock on effect on performance
+    print('========CALLS TEST===========')
+    calls = 10 # number of calls
+    rng = 50_000_000 # iterations in the call to spend some time calculating
+    print('calls: ', calls, ', range: ', rng)
+    run_calcs_calls(True, rng, calls)
+    run_calcs_calls(False, rng, calls)
+    print()
+    calls = 2000 # number of calls
+    rng = 50 # iterations in the call to spend some time calculating
+    print('calls: ', calls, ', range: ', rng)
+    run_calcs_calls(True, rng, calls)
+    run_calcs_calls(False, rng, calls)
+```
+
+Output:
+```
+========CALLS TEST===========
+calls:  10 , range:  50000000
+mplite - enabled
+time taken:  3.9659698009490967
+mplite - disabled
+time taken:  16.89996838569641
+
+calls:  2000 , range:  50
+mplite - enabled
+time taken:  0.7209787368774414
+mplite - disabled
+time taken:  0.004016399383544922
+
+```
+
+Example with sleep time in each adder function:
+```
+def run_calcs_sleep(mp_enabled, sleep):
+    args = list(range(20))
+    start = time.time()
+    prev_mem = 0
+    L = []
+
+    if mp_enabled:
+        with TaskManager() as tm:
+            tasks = []
+            for arg in args:
+                tasks.append(Task(adder, *(prev_mem, arg, sleep)))
+                prev_mem = arg
+            L = tm.execute(tasks)
+    else:
+        for arg in args:
+            res = adder(prev_mem, arg, sleep)
+            L.append(res)
+            prev_mem = arg
+
+    end = time.time()
+    if mp_enabled:
+        print('mplite - enabled')
+    else:
+        print('mplite - disabled')
+
+    print('time taken: ', end - start)
+    print(L)
+
+
+def adder(a, b, sleep):
+    time.sleep(sleep)
+    return a+b
+
+def test_mplite_performance():    
+def test_mplite_performance():
+
+    # change sleep times to see the knock on effect on performance
+    print('========SLEEP TEST===========')
+    sleep = 2
+    print('sleep timer value: ', sleep)
+    run_calcs_sleep(True, sleep)
+    run_calcs_sleep(False, sleep)
+    print()
+    sleep = 0.02
+    print('sleep timer value: ', sleep)
+    run_calcs_sleep(True, sleep)
+    run_calcs_sleep(False, sleep)
+    sleep = 0.01
+    print('sleep timer value: ', sleep)
+    run_calcs_sleep(True, sleep)
+    run_calcs_sleep(False, sleep)
+```
+
+Output:
+```
+========SLEEP TEST===========
+sleep timer value:  2
+mplite - enabled
+time taken:  4.644009828567505
+mplite - disabled
+time taken:  40.01024603843689
+
+sleep timer value:  0.02
+mplite - enabled
+time taken:  0.6609671115875244
+mplite - disabled
+time taken:  0.4100008010864258
+
+sleep timer value:  0.01
+mplite - enabled
+time taken:  0.6430003643035889
+mplite - disabled
+time taken:  0.21017980575561523
+
+
+
+```
