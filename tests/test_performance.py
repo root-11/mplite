@@ -22,8 +22,10 @@ def run_calcs_calls(mp_enabled=True, rng=50_000_000, calls = 20):
     else:
         print('mplite - disabled')
 
-    print('time taken: ', end - start)
+    count = end - start
+    print('time taken: ', count)
     print(L)
+    return count
 
 
 def fun(call_id, rng):
@@ -59,8 +61,10 @@ def run_calcs_sleep(mp_enabled, sleep):
     else:
         print('mplite - disabled')
 
-    print('time taken: ', end - start)
+    count = end - start
+    print('time taken: ', count)
     print(L)
+    return count
 
 
 def adder(a, b, sleep):
@@ -74,14 +78,16 @@ def test_mplite_performance():
     calls = 10 # number of calls
     rng = 50_000_000 # iterations in the call to spend some time calculating
     print('calls: ', calls, ', range: ', rng)
-    run_calcs_calls(True, rng, calls)
-    run_calcs_calls(False, rng, calls)
+    mp_e = run_calcs_calls(True, rng, calls)
+    mp_d = run_calcs_calls(False, rng, calls)
+    assert mp_e < mp_d
     print()
     calls = 2000 # number of calls
     rng = 50 # iterations in the call to spend some time calculating
     print('calls: ', calls, ', range: ', rng)
-    run_calcs_calls(True, rng, calls)
-    run_calcs_calls(False, rng, calls)
+    mp_e = run_calcs_calls(True, rng, calls)
+    mp_d = run_calcs_calls(False, rng, calls)
+    assert mp_e > mp_d
 
     for i in range(3):
         print()
@@ -90,15 +96,18 @@ def test_mplite_performance():
     print('========SLEEP TEST===========')
     sleep = 2
     print('sleep timer value: ', sleep)
-    run_calcs_sleep(True, sleep)
-    run_calcs_sleep(False, sleep)
+    mp_e = run_calcs_sleep(True, sleep)
+    mp_d = run_calcs_sleep(False, sleep)
+    assert mp_e < mp_d
     print()
     sleep = 0.02
     print('sleep timer value: ', sleep)
-    run_calcs_sleep(True, sleep)
-    run_calcs_sleep(False, sleep)
+    mp_e = run_calcs_sleep(True, sleep)
+    mp_d = run_calcs_sleep(False, sleep)
+    assert mp_e > mp_d
     sleep = 0.01
     print('sleep timer value: ', sleep)
-    run_calcs_sleep(True, sleep)
-    run_calcs_sleep(False, sleep)
+    mp_e = run_calcs_sleep(True, sleep)
+    mp_d = run_calcs_sleep(False, sleep)
+    assert mp_e > mp_d
 
