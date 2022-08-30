@@ -15,7 +15,9 @@ with open('requirements.txt', 'r') as fi:
 with open('mplite/__init__.py', 'r') as fi:
     for line in fi.readlines():
         if line.startswith("major, minor, patch"):  # something like """major, minor, patch = 1, 1, 0"""
+            major, minor, patch = None,None,None
             exec(line)  # creates variables major, minor, patch
+            assert all(i is not None for i in (major, minor, patch))
             __version_info__ = (major, minor, patch)
             version = '.'.join(str(i) for i in __version_info__)
             break
