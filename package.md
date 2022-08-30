@@ -1,4 +1,4 @@
-# Packaging instructions for tablite for pypi
+# Packaging instructions for mplite for pypi
 
 ------------------------------------------
 run:
