@@ -94,16 +94,12 @@ def test_mplite_performance():
             total_time_mp_e, cpu_task_time_mp_e, cpu_count_mp_e = run_calcs_calls(True, rng, calls, cpus)
             total_time_mp_d, cpu_task_time_mp_d, cpu_count_mp_d = run_calcs_calls(False, rng, calls, cpus)
             artifacts = [cpus, calls, rng, total_time_mp_e, cpu_task_time_mp_e, cpu_count_mp_e, total_time_mp_d, cpu_task_time_mp_d, cpu_count_mp_d]
-            if ix == 1: # assert mplite is faster for less calls and heavier process
-                if cpu_count_mp_e > cpu_count_mp_d:
+            if cpu_count_mp_e > cpu_count_mp_d:
+                if ix == 1: # assert mplite is faster for less calls and heavier process
                     assert total_time_mp_e < total_time_mp_d, artifacts
-                else:
-                    assert True
-            if ix == 2: # assert mplite is slower for more calls and lighter process
-                if cpu_count_mp_e > cpu_count_mp_d:
-                    assert total_time_mp_e > total_time_mp_d, artifacts
-                else:
-                    assert True
+            else:
+                assert True
+
 
     for _ in range(3):
         print()
@@ -116,15 +112,11 @@ def test_mplite_performance():
             total_time_mp_e, cpu_count_mp_e = run_calcs_sleep(True, sleep, cpus)
             total_time_mp_d, cpu_count_mp_d = run_calcs_sleep(False, sleep, cpus)
             artifacts = [cpus, total_time_mp_e, cpu_count_mp_e, total_time_mp_d, cpu_count_mp_d]
-            if ix == 1: # assert mplite is faster for longer sleep
-                if cpu_count_mp_e > cpu_count_mp_d:
+            if cpu_count_mp_e > cpu_count_mp_d:
+                if ix == 1:  # assert mplite is faster for longer sleep
                     assert total_time_mp_e < total_time_mp_d, artifacts
-                else:
-                    assert True
-            if ix == 3: # assert mplite is slower for smaller sleep
-                if cpu_count_mp_e > cpu_count_mp_d:
-                    assert total_time_mp_e > total_time_mp_d, artifacts
-                else:
-                    assert True
+            else:
+                assert True
+
 
 
