@@ -226,11 +226,16 @@ The fewer the number of tasks and the heavier (computationally) each of them the
 
 Example with number of calls with a number of iterations in the call:
 ```
-def run_calcs_calls(mp_enabled=True, rng=50_000_000, calls = 20):
-    start = time.time()
+import multiprocessing
+import time
+from mplite import TaskManager, Task
+
+
+def run_calcs_calls(mp_enabled=True, rng=50_000_000, calls=20, cpus=1):
+    start = time.perf_counter()
     L = []
     if mp_enabled:
-        with TaskManager() as tm:
+        with TaskManager(cpu_count=cpus) as tm:
             tasks = []
             for call in range(1, calls+1):
                 tasks.append(Task(fun, *(call, rng)))
@@ -240,37 +245,48 @@ def run_calcs_calls(mp_enabled=True, rng=50_000_000, calls = 20):
             res = fun(call, rng)
             L.append(res)
 
-    end = time.time()
+    task_times = [tm for res, tm in L]
+    cpu_count = cpus if mp_enabled else 1
+    cpu_task_time = sum(task_times)/cpu_count
+
     if mp_enabled:
         print('mplite - enabled')
     else:
         print('mplite - disabled')
 
-    print('time taken: ', end - start)
-    print(L)
+    print('cpu_count: ', cpu_count)
+    print(f'avg. time taken per cpu: ', cpu_task_time)
+    end = time.perf_counter()
+    total_time = end - start
+    print('total time taken: ', total_time)
+    print()
+    return total_time, cpu_task_time, cpu_count
 
 
 def fun(call_id, rng):
     # burn some time iterating thru
+    start = time.perf_counter()
     t = 0
     for i in range(rng):
         t = i/call_id
-    return t
+    end = time.perf_counter()
+    return t, end - start
+
 
 def test_mplite_performance():    
     # change calls and range to see the knock on effect on performance
     print('========CALLS TEST===========')
-    calls = 10 # number of calls
-    rng = 50_000_000 # iterations in the call to spend some time calculating
-    print('calls: ', calls, ', range: ', rng)
-    run_calcs_calls(True, rng, calls)
-    run_calcs_calls(False, rng, calls)
-    print()
-    calls = 2000 # number of calls
-    rng = 50 # iterations in the call to spend some time calculating
-    print('calls: ', calls, ', range: ', rng)
-    run_calcs_calls(True, rng, calls)
-    run_calcs_calls(False, rng, calls)
+    for cpus in [1, multiprocessing.cpu_count()]:
+        for ix, (calls, rng) in enumerate([(10, 50_000_000), (2000, 50)], start=1):
+            print('calls: ', calls, ', range: ', rng)
+            total_time_mp_e, cpu_task_time_mp_e, cpu_count_mp_e = run_calcs_calls(True, rng, calls, cpus)
+            total_time_mp_d, cpu_task_time_mp_d, cpu_count_mp_d = run_calcs_calls(False, rng, calls, cpus)
+            artifacts = [cpus, calls, rng, total_time_mp_e, cpu_task_time_mp_e, cpu_count_mp_e, total_time_mp_d, cpu_task_time_mp_d, cpu_count_mp_d]
+            if cpu_count_mp_e > cpu_count_mp_d:
+                if ix == 1: # assert mplite is faster for less calls and heavier process
+                    assert total_time_mp_e < total_time_mp_d, artifacts
+            else:
+                assert True
 ```
 
 Output:
@@ -278,28 +294,65 @@ Output:
 ========CALLS TEST===========
 calls:  10 , range:  50000000
 mplite - enabled
-time taken:  3.9659698009490967
+cpu_count:  1
+avg. time taken per cpu:  18.5264333
+total time taken:  18.8809622
+
 mplite - disabled
-time taken:  16.89996838569641
+cpu_count:  1
+avg. time taken per cpu:  18.912037
+total time taken:  18.9126078
 
 calls:  2000 , range:  50
 mplite - enabled
-time taken:  0.7209787368774414
+cpu_count:  1
+avg. time taken per cpu:  0.005216900000000357
+total time taken:  0.490177800000005
+
 mplite - disabled
-time taken:  0.004016399383544922
+cpu_count:  1
+avg. time taken per cpu:  0.003248700000142435
+total time taken:  0.003983699999999146
+
+calls:  10 , range:  50000000
+mplite - enabled
+cpu_count:  12
+avg. time taken per cpu:  3.410191883333333
+total time taken:  4.978601699999999
+
+mplite - disabled
+cpu_count:  1
+avg. time taken per cpu:  19.312383399999995
+total time taken:  19.312710600000003
+
+calls:  2000 , range:  50
+mplite - enabled
+cpu_count:  12
+avg. time taken per cpu:  0.0005722500000000056
+total time taken:  0.9079466999999966
+
+mplite - disabled
+cpu_count:  1
+avg. time taken per cpu:  0.0038669999999427773
+total time taken:  0.004872100000000046
 
 ```
 
 Example with sleep time in each adder function:
 ```
-def run_calcs_sleep(mp_enabled, sleep):
+import multiprocessing
+import time
+from mplite import TaskManager, Task
+
+
+def run_calcs_sleep(mp_enabled, sleep=2, cpus=1):
     args = list(range(20))
-    start = time.time()
+    start = time.perf_counter()
     prev_mem = 0
     L = []
 
     if mp_enabled:
-        with TaskManager() as tm:
+        with TaskManager(cpus) as tm:
             tasks = []
             for arg in args:
                 tasks.append(Task(adder, *(prev_mem, arg, sleep)))
@@ -311,38 +364,41 @@ def run_calcs_sleep(mp_enabled, sleep):
             L.append(res)
             prev_mem = arg
 
-    end = time.time()
+    end = time.perf_counter()
+
+    cpu_count = cpus if mp_enabled else 1
+
     if mp_enabled:
         print('mplite - enabled')
     else:
         print('mplite - disabled')
 
-    print('time taken: ', end - start)
-    print(L)
+    total_time = end - start
+    print('cpu_count: ', cpu_count)
+    print('total time taken: ', total_time)
+    print()
+    return total_time, cpu_count
 
 
 def adder(a, b, sleep):
     time.sleep(sleep)
     return a+b
 
-def test_mplite_performance():    
-def test_mplite_performance():
 
+def test_mplite_performance():
     # change sleep times to see the knock on effect on performance
     print('========SLEEP TEST===========')
-    sleep = 2
-    print('sleep timer value: ', sleep)
-    run_calcs_sleep(True, sleep)
-    run_calcs_sleep(False, sleep)
-    print()
-    sleep = 0.02
-    print('sleep timer value: ', sleep)
-    run_calcs_sleep(True, sleep)
-    run_calcs_sleep(False, sleep)
-    sleep = 0.01
-    print('sleep timer value: ', sleep)
-    run_calcs_sleep(True, sleep)
-    run_calcs_sleep(False, sleep)
+    for cpus in [1, multiprocessing.cpu_count()]:
+        for ix, sleep in enumerate([2, 0.02, 0.01], start=1):
+            print('sleep timer value: ', sleep)
+            total_time_mp_e, cpu_count_mp_e = run_calcs_sleep(True, sleep, cpus)
+            total_time_mp_d, cpu_count_mp_d = run_calcs_sleep(False, sleep, cpus)
+            artifacts = [cpus, total_time_mp_e, cpu_count_mp_e, total_time_mp_d, cpu_count_mp_d]
+            if cpu_count_mp_e > cpu_count_mp_d:
+                if ix == 1:  # assert mplite is faster for longer sleep
+                    assert total_time_mp_e < total_time_mp_d, artifacts
+            else:
+                assert True
 ```
 
 Output:
@@ -350,21 +406,58 @@ Output:
 ========SLEEP TEST===========
 sleep timer value:  2
 mplite - enabled
-time taken:  4.644009828567505
+cpu_count:  1
+total time taken:  40.4222287
+
 mplite - disabled
-time taken:  40.01024603843689
+cpu_count:  1
+total time taken:  40.006973200000004
 
 sleep timer value:  0.02
 mplite - enabled
-time taken:  0.6609671115875244
+cpu_count:  1
+total time taken:  0.7628226999999868
+
 mplite - disabled
-time taken:  0.4100008010864258
+cpu_count:  1
+total time taken:  0.4116598999999894
 
 sleep timer value:  0.01
 mplite - enabled
-time taken:  0.6430003643035889
+cpu_count:  1
+total time taken:  0.5629501999999889
+
 mplite - disabled
-time taken:  0.21017980575561523
+cpu_count:  1
+total time taken:  0.21054430000000934
+
+sleep timer value:  2
+mplite - enabled
+cpu_count:  12
+total time taken:  4.821827799999994
+
+mplite - disabled
+cpu_count:  1
+total time taken:  40.011519899999996
+
+sleep timer value:  0.02
+mplite - enabled
+cpu_count:  12
+total time taken:  0.713870500000013
+
+mplite - disabled
+cpu_count:  1
+total time taken:  0.41133019999998055
+
+sleep timer value:  0.01
+mplite - enabled
+cpu_count:  12
+total time taken:  0.6938743000000045
+
+Ran 1 test in 192.739s
+mplite - disabled
+cpu_count:  1
+total time taken:  0.20631170000001475
 
 
 
