@@ -2,11 +2,11 @@ import io
 import multiprocessing
 import traceback
 import time
-from tqdm import tqdm
+from tqdm import tqdm as _tqdm
 import queue
 
 
-major, minor, patch = 1, 1, 1
+major, minor, patch = 1, 2, 0
 __version_info__ = (major, minor, patch)
 __version__ = '.'.join(str(i) for i in __version_info__)
 
@@ -82,20 +82,48 @@ class TaskManager(object):
             worker.start()
         while not all(p.is_alive() for p in self.pool):
             time.sleep(0.01)
-    def execute(self, tasks):
+    def execute(self, tasks, tqdm=_tqdm, pbar=None):
+        """
+        Execute tasks using mplite
+
+        REQUIRED
+        --------
+        tasks: list
+            List of tasks to execute
+
+        OPTIONAL
+        --------
+        tqdm: Type[tqdm]
+            Type[_tqdm]: (default) Use the standard tqdm module provided class.
+            Type[tqdm]: A tqdm compatible callable.
+
+            When progress bar is created, the given tqdm compatible callable will be used,
+            if None is provided, falls back to the standard tqdm implementation.
+
+        pbar: tqdm
+            None: (default) Create a new progress bar using given tqdm callable.
+            tqdm: An instance of tqdm progress bar.
+
+            Tracks the execution progress using tqdm instance,
+            if None is provided, progress bar will be created using tqdm callable provided by tqdm parameter.
+        """
         self._open_tasks += len(tasks)
         for t in tasks:
             self.tq.put(t)
         results = []
-        with tqdm(total=self._open_tasks, unit='tasks') as pbar:
-            while self._open_tasks != 0:
-                try:
-                    task = self.rq.get_nowait()
-                    self._open_tasks-=1
-                    results.append(task)
-                    pbar.update(1)
-                except queue.Empty:
-                    time.sleep(0.01)
+
+        if pbar is None:
+            """ if pbar object was not passed, create a new tqdm compatibe object """
+            pbar = tqdm(total=self._open_tasks, unit='tasks')
+
+        while self._open_tasks != 0:
+            try:
+                task = self.rq.get_nowait()
+                self._open_tasks-=1
+                results.append(task)
+                pbar.update(1)
+            except queue.Empty:
+                time.sleep(0.01)
         return results
 
     def submit(self, task):
