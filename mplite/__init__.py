@@ -2,11 +2,11 @@ import io
 import multiprocessing
 import traceback
 import time
-from tqdm import tqdm
+from tqdm import tqdm as _tqdm
 import queue
 
 
-major, minor, patch = 1, 1, 1
+major, minor, patch = 1, 2, 0
 __version_info__ = (major, minor, patch)
 __version__ = '.'.join(str(i) for i in __version_info__)
 
@@ -82,20 +82,23 @@ class TaskManager(object):
             worker.start()
         while not all(p.is_alive() for p in self.pool):
             time.sleep(0.01)
-    def execute(self, tasks):
+    def execute(self, tasks, tqdm=_tqdm, pbar=None):
         self._open_tasks += len(tasks)
         for t in tasks:
             self.tq.put(t)
         results = []
-        with tqdm(total=self._open_tasks, unit='tasks') as pbar:
-            while self._open_tasks != 0:
-                try:
-                    task = self.rq.get_nowait()
-                    self._open_tasks-=1
-                    results.append(task)
-                    pbar.update(1)
-                except queue.Empty:
-                    time.sleep(0.01)
+
+        if pbar is None:
+            pbar = tqdm(total=self._open_tasks, unit='tasks')
+
+        while self._open_tasks != 0:
+            try:
+                task = self.rq.get_nowait()
+                self._open_tasks-=1
+                results.append(task)
+                pbar.update(1)
+            except queue.Empty:
+                time.sleep(0.01)
         return results
 
     def submit(self, task):
