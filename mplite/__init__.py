@@ -83,12 +83,37 @@ class TaskManager(object):
         while not all(p.is_alive() for p in self.pool):
             time.sleep(0.01)
     def execute(self, tasks, tqdm=_tqdm, pbar=None):
+        """
+        Execute tasks using mplite
+
+        REQUIRED
+        --------
+        tasks: list
+            List of tasks to execute
+
+        OPTIONAL
+        --------
+        tqdm: Type[tqdm]
+            Type[_tqdm]: (default) Use the standard tqdm module provided class.
+            Type[tqdm]: A tqdm compatible callable.
+
+            When progress bar is created, the given tqdm compatible callable will be used,
+            if None is provided, falls back to the standard tqdm implementation.
+
+        pbar: tqdm
+            None: (default) Create a new progress bar using given tqdm callable.
+            tqdm: An instance of tqdm progress bar.
+
+            Tracks the execution progress using tqdm instance,
+            if None is provided, progress bar will be created using tqdm callable provided by tqdm parameter.
+        """
         self._open_tasks += len(tasks)
         for t in tasks:
             self.tq.put(t)
         results = []
 
         if pbar is None:
+            """ if pbar object was not passed, create a new tqdm compatibe object """
             pbar = tqdm(total=self._open_tasks, unit='tasks')
 
         while self._open_tasks != 0:
