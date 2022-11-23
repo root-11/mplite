@@ -1,9 +1,10 @@
 # mplite
 
-![Build status](https://github.com/root-11/mplite/actions/workflows/python-package.yml/badge.svg)
+![Build status](https://github.com/root-11/mplite/actions/workflows/python-test.yml/badge.svg)
 [![codecov](https://codecov.io/gh/root-11/mplite/branch/main/graph/badge.svg?token=QRBR8W5AB3)](https://codecov.io/gh/root-11/mplite)
 [![Downloads](https://pepy.tech/badge/mplite)](https://pepy.tech/project/mplite)
 [![Downloads](https://pepy.tech/badge/mplite/month)](https://pepy.tech/project/mplite/month)
+[![PyPI version](https://badge.fury.io/py/mplite.svg)](https://badge.fury.io/py/mplite)
 
 A light weight wrapper for pythons multiprocessing module that makes multiprocessing easy.
 
