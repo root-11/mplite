@@ -114,6 +114,8 @@ def test_killed():
         with TaskManager(1) as tm:
             res = tm.execute([Task(exit_kill)])
 
+            print(res)
+
             raise Exception("Should have throw an exception")
 
     except ChildProcessError as ex:
@@ -123,6 +125,8 @@ def test_abrupt_exit():
     try:
         with TaskManager(1) as tm:
             res = tm.execute([Task(exit_abrupt_exit)])
+
+            print(res)
 
             raise Exception("Should have throw an exception")
 
