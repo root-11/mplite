@@ -1,3 +1,6 @@
+import os
+import platform
+import signal
 from mplite import TaskManager,Task
 import time
 
@@ -95,4 +98,49 @@ def test_incremental_workload():
         assert a == checksum or b == checksum,(a,b,checksum)
         
 
-        
+def exit_kill():
+    time.sleep(1)
+
+    is_windows = platform.system() == "Windows"
+
+    if is_windows:
+        exit(-9)
+    else:
+        os.kill(os.getpid(), signal.SIGKILL)
+    
+    time.sleep(1)
+
+    return "no err"
+
+def exit_abrupt_exit():
+    time.sleep(1)
+    exit(42)
+
+def test_killed():
+    try:
+        with TaskManager(1) as tm:
+            res = tm.execute([Task(exit_kill)])
+
+            print(res)
+
+            raise Exception("Should have throw an exception")
+
+    except ChildProcessError as ex:
+        is_windows = platform.system() == "Windows"
+
+        if is_windows:
+            assert True
+        else:
+            assert "out of memory" in str(ex), "Must be out of memory exception"
+
+def test_abrupt_exit():
+    try:
+        with TaskManager(1) as tm:
+            res = tm.execute([Task(exit_abrupt_exit)])
+
+            print(res)
+
+            raise Exception("Should have throw an exception")
+
+    except ChildProcessError as ex:
+        assert "42" in str(ex), "Must be out of memory exception"

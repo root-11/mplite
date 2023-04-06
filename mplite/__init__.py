@@ -6,7 +6,7 @@ from tqdm import tqdm as _tqdm
 import queue
 
 
-major, minor, patch = 1, 2, 1
+major, minor, patch = 1, 2, 2
 __version_info__ = (major, minor, patch)
 __version__ = '.'.join(str(i) for i in __version_info__)
 
@@ -22,13 +22,16 @@ class Task(object):
         if not isinstance(kwargs, dict):
             raise TypeError(f"{kwargs} is not a dict")
         self.kwargs = kwargs
+
     def __str__(self) -> str:
         return f"Task(f={self.f.__name__}, *{self.args}, **{self.kwargs})"
+
     def __repr__(self) -> str:
         return f"Task(f={self.f.__name__}, *{self.args}, **{self.kwargs})"
+
     def execute(self):
         try:
-            return self.f(*self.args,**self.kwargs)
+            return self.f(*self.args, **self.kwargs)
         except Exception as e:
             f = io.StringIO()
             traceback.print_exc(limit=3, file=f)
@@ -36,21 +39,22 @@ class Task(object):
             error = f.read()
             f.close()
             return error
-                    
+
 
 class Worker(multiprocessing.Process):
-    def __init__(self,name,tq,rq):
+    def __init__(self, name, tq, rq):
         super().__init__(group=None, target=self.update, name=name, daemon=False)
         self.exit = multiprocessing.Event()
         self.tq = tq  # workers task queue
         self.rq = rq  # workers result queue
+
     def update(self):
         while True:
             try:
                 task = self.tq.get_nowait()
             except queue.Empty:
                 task = None
-            
+
             if task == "stop":
                 self.tq.put_nowait(task)
                 self.exit.set()
@@ -68,13 +72,16 @@ class TaskManager(object):
         self._cpus = multiprocessing.cpu_count() if cpu_count is None else cpu_count
         self.tq = multiprocessing.Queue()
         self.rq = multiprocessing.Queue()
-        self.pool = []
+        self.pool: list[Worker] = []
         self._open_tasks = 0
+
     def __enter__(self):
         self.start()
         return self
-    def __exit__(self, exc_type, exc_val, exc_tb): # signature requires these, though I don't use them.
+
+    def __exit__(self, exc_type, exc_val, exc_tb):  # signature requires these, though I don't use them.
         self.stop()  # stop the workers.
+
     def start(self):
         for i in range(self._cpus):  # create workers
             worker = Worker(name=str(i), tq=self.tq, rq=self.rq)
@@ -82,6 +89,7 @@ class TaskManager(object):
             worker.start()
         while not all(p.is_alive() for p in self.pool):
             time.sleep(0.01)
+
     def execute(self, tasks, tqdm=_tqdm, pbar=None):
         """
         Execute tasks using mplite
@@ -119,10 +127,19 @@ class TaskManager(object):
         while self._open_tasks != 0:
             try:
                 task = self.rq.get_nowait()
-                self._open_tasks-=1
+                self._open_tasks -= 1
                 results.append(task)
                 pbar.update(1)
             except queue.Empty:
+                dead_processes = list(filter(lambda p: not p.is_alive() and p.exitcode != 0, self.pool))
+                if len(dead_processes) > 0:
+                    return_codes = [p.exitcode for p in dead_processes]
+                    return_codes_str = ", ".join(str(p) for p in return_codes)
+
+                    if -9 in return_codes:
+                        raise ChildProcessError(f"One or more of processes were killed, likely because system ran out of memory. Exit codes: {return_codes_str}")
+                    raise ChildProcessError(f"One or more processes exited abruptly. Exit codes: {return_codes_str}")
+
                 time.sleep(0.01)
         return results
 
@@ -137,7 +154,7 @@ class TaskManager(object):
         """ permits asynchronous retrieval of results """
         try:
             result = self.rq.get_nowait()
-            self._open_tasks-=1
+            self._open_tasks -= 1
         except queue.Empty:
             result = None
         return result
@@ -156,8 +173,3 @@ class TaskManager(object):
             _ = self.tq.get_nowait()
         while not self.rq.empty:
             _ = self.rq.get_nowait()
-
-
-
-
-
