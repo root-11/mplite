@@ -137,7 +137,7 @@ class TaskManager(object):
                     return_codes_str = ", ".join(str(p) for p in return_codes)
 
                     if -9 in return_codes:
-                        raise ChildProcessError(f"One or more of were killed by OS, likely because system ran out of memory. Exit codes: {return_codes_str}")
+                        raise ChildProcessError(f"One or more of processes were killed, likely because system ran out of memory. Exit codes: {return_codes_str}")
                     raise ChildProcessError(f"One or more processes exited abruptly. Exit codes: {return_codes_str}")
 
                 time.sleep(0.01)
