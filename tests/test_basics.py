@@ -100,14 +100,15 @@ def test_incremental_workload():
 
 def exit_kill():
     time.sleep(1)
-    os.kill(os.getpid(), signal.SIGKILL)
 
     is_windows = platform.system() == "Windows"
 
     if is_windows:
         exit(-9)
     else:
-        time.sleep(1)
+        os.kill(os.getpid(), signal.SIGKILL)
+    
+    time.sleep(1)
 
     return "no err"
 
