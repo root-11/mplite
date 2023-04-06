@@ -1,4 +1,5 @@
 import os
+import platform
 import signal
 from mplite import TaskManager,Task
 import time
@@ -101,7 +102,12 @@ def exit_kill():
     time.sleep(1)
     os.kill(os.getpid(), signal.SIGKILL)
 
-    time.sleep(1)
+    is_windows = platform.system() == "Windows"
+
+    if is_windows:
+        exit(-9)
+    else:
+        time.sleep(1)
 
     return "no err"
 
@@ -119,7 +125,12 @@ def test_killed():
             raise Exception("Should have throw an exception")
 
     except ChildProcessError as ex:
-        assert "out of memory" in str(ex), "Must be out of memory exception"
+        is_windows = platform.system() == "Windows"
+
+        if is_windows:
+            assert "247" in str(ex), "Must be out of memory exception"
+        else:
+            assert "out of memory" in str(ex), "Must be out of memory exception"
 
 def test_abrupt_exit():
     try:
