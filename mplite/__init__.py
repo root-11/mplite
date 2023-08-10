@@ -4,7 +4,7 @@ import traceback
 import time
 from tqdm import tqdm as _tqdm
 import queue
-from uuid import uuid4 as uuid
+from itertools import count
 
 
 major, minor, patch = 1, 2, 3
@@ -13,7 +13,10 @@ __version__ = '.'.join(str(i) for i in __version_info__)
 
 
 class Task(object):
+    task_id_counter = count(start=1)
+
     def __init__(self, f, *args, **kwargs) -> None:
+        
         if not callable(f):
             raise TypeError(f"{f} is not callable")
         self.f = f
@@ -23,7 +26,7 @@ class Task(object):
         if not isinstance(kwargs, dict):
             raise TypeError(f"{kwargs} is not a dict")
         self.kwargs = kwargs
-        self._key = str(uuid())
+        self.id = next(Task.task_id_counter)
 
     def __str__(self) -> str:
         return f"Task(f={self.f.__name__}, *{self.args}, **{self.kwargs})"
@@ -64,7 +67,7 @@ class Worker(multiprocessing.Process):
 
             elif isinstance(task, Task):
                 result = task.execute()
-                self.rq.put((task._key, result))
+                self.rq.put((task.id, result))
             else:
                 time.sleep(0.01)
 
@@ -123,7 +126,7 @@ class TaskManager(object):
 
         for i, t in enumerate(tasks):
             self.tq.put(t)
-            task_indices[t._key] = i
+            task_indices[t.id] = i
         results = [None] * task_count
 
         if pbar is None:
