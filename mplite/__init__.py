@@ -4,15 +4,19 @@ import traceback
 import time
 from tqdm import tqdm as _tqdm
 import queue
+from itertools import count
 
 
-major, minor, patch = 1, 2, 2
+major, minor, patch = 1, 2, 3
 __version_info__ = (major, minor, patch)
 __version__ = '.'.join(str(i) for i in __version_info__)
 
 
 class Task(object):
+    task_id_counter = count(start=1)
+
     def __init__(self, f, *args, **kwargs) -> None:
+        
         if not callable(f):
             raise TypeError(f"{f} is not callable")
         self.f = f
@@ -22,6 +26,7 @@ class Task(object):
         if not isinstance(kwargs, dict):
             raise TypeError(f"{kwargs} is not a dict")
         self.kwargs = kwargs
+        self.id = next(Task.task_id_counter)
 
     def __str__(self) -> str:
         return f"Task(f={self.f.__name__}, *{self.args}, **{self.kwargs})"
@@ -62,7 +67,7 @@ class Worker(multiprocessing.Process):
 
             elif isinstance(task, Task):
                 result = task.execute()
-                self.rq.put(result)
+                self.rq.put((task.id, result))
             else:
                 time.sleep(0.01)
 
@@ -115,10 +120,14 @@ class TaskManager(object):
             Tracks the execution progress using tqdm instance,
             if None is provided, progress bar will be created using tqdm callable provided by tqdm parameter.
         """
-        self._open_tasks += len(tasks)
-        for t in tasks:
+        task_count = len(tasks)
+        self._open_tasks += task_count
+        task_indices = {}
+
+        for i, t in enumerate(tasks):
             self.tq.put(t)
-        results = []
+            task_indices[t.id] = i
+        results = [None] * task_count
 
         if pbar is None:
             """ if pbar object was not passed, create a new tqdm compatibe object """
@@ -126,9 +135,9 @@ class TaskManager(object):
 
         while self._open_tasks != 0:
             try:
-                task = self.rq.get_nowait()
+                task_key, res = self.rq.get_nowait()
                 self._open_tasks -= 1
-                results.append(task)
+                results[task_indices[task_key]] = res
                 pbar.update(1)
             except queue.Empty:
                 dead_processes = list(filter(lambda p: not p.is_alive() and p.exitcode != 0, self.pool))
@@ -153,7 +162,7 @@ class TaskManager(object):
     def take(self):
         """ permits asynchronous retrieval of results """
         try:
-            result = self.rq.get_nowait()
+            _, result = self.rq.get_nowait()
             self._open_tasks -= 1
         except queue.Empty:
             result = None
