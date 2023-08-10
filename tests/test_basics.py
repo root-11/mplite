@@ -3,7 +3,7 @@ import platform
 import signal
 from mplite import TaskManager,Task
 import time
-
+import random
 
 def test_alpha():
     args = list(range(10)) * 5
@@ -144,3 +144,22 @@ def test_abrupt_exit():
 
     except ChildProcessError as ex:
         assert "42" in str(ex), "Must be out of memory exception"
+
+
+def task(index):
+    time.sleep(random.random() * 2)
+
+    return index
+
+
+def test_task_order():
+
+    tasks = [Task(task, (i, )) for i in range(10)]
+
+    with TaskManager(10) as tm:
+        res = [k for k, *_ in tm.execute(tasks)]
+
+    assert res == list(range(10))
+
+if __name__ == "__main__":
+    test_task_order()
