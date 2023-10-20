@@ -1,4 +1,5 @@
 import io
+import sys
 import multiprocessing
 import traceback
 import time
@@ -7,10 +8,10 @@ import queue
 from itertools import count
 
 
-major, minor, patch = 1, 2, 3
+major, minor, patch = 1, 2, 4
 __version_info__ = (major, minor, patch)
 __version__ = '.'.join(str(i) for i in __version_info__)
-
+default_context = None if "pytest" in sys.modules else "spawn"
 
 class Task(object):
     task_id_counter = count(start=1)
@@ -46,12 +47,24 @@ class Task(object):
             return error
 
 
-class Worker(multiprocessing.Process):
-    def __init__(self, name, tq, rq):
-        super().__init__(group=None, target=self.update, name=name, daemon=False)
+class Worker(object):
+    def __init__(self, ctx, name, tq, rq):
+        self.ctx = ctx
         self.exit = multiprocessing.Event()
         self.tq = tq  # workers task queue
         self.rq = rq  # workers result queue
+
+        self.process = ctx.Process(group=None, target=self.update, name=name, daemon=False)
+
+    def start(self):
+        self.process.start()
+
+    def is_alive(self):
+        return self.process.is_alive()
+    
+    @property
+    def exitcode(self):
+        return self.process.exitcode
 
     def update(self):
         while True:
@@ -73,10 +86,11 @@ class Worker(multiprocessing.Process):
 
 
 class TaskManager(object):
-    def __init__(self, cpu_count=None) -> None:
+    def __init__(self, cpu_count=None, context=default_context) -> None:
+        self._ctx = multiprocessing.get_context(context)
         self._cpus = multiprocessing.cpu_count() if cpu_count is None else cpu_count
-        self.tq = multiprocessing.Queue()
-        self.rq = multiprocessing.Queue()
+        self.tq = self._ctx.Queue()
+        self.rq = self._ctx.Queue()
         self.pool: list[Worker] = []
         self._open_tasks = 0
 
@@ -89,7 +103,7 @@ class TaskManager(object):
 
     def start(self):
         for i in range(self._cpus):  # create workers
-            worker = Worker(name=str(i), tq=self.tq, rq=self.rq)
+            worker = Worker(self._ctx, name=str(i), tq=self.tq, rq=self.rq)
             self.pool.append(worker)
             worker.start()
         while not all(p.is_alive() for p in self.pool):
