@@ -1,4 +1,5 @@
 import io
+import sys
 import multiprocessing
 import traceback
 import time
@@ -10,7 +11,7 @@ from itertools import count
 major, minor, patch = 1, 2, 4
 __version_info__ = (major, minor, patch)
 __version__ = '.'.join(str(i) for i in __version_info__)
-
+default_context = None if "pytest" in sys.modules else "spawn"
 
 class Task(object):
     task_id_counter = count(start=1)
@@ -85,7 +86,7 @@ class Worker(object):
 
 
 class TaskManager(object):
-    def __init__(self, cpu_count=None, context="spawn") -> None:
+    def __init__(self, cpu_count=None, context=default_context) -> None:
         self._ctx = multiprocessing.get_context(context)
         self._cpus = multiprocessing.cpu_count() if cpu_count is None else cpu_count
         self.tq = self._ctx.Queue()
