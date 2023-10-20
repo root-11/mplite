@@ -60,6 +60,10 @@ class Worker(object):
 
     def is_alive(self):
         return self.process.is_alive()
+    
+    @property
+    def exitcode(self):
+        return self.process.exitcode
 
     def update(self):
         while True:
