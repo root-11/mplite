@@ -50,7 +50,7 @@ class Task(object):
 class Worker(object):
     def __init__(self, ctx, name, tq, rq):
         self.ctx = ctx
-        self.exit = multiprocessing.Event()
+        self.exit = ctx.Event()
         self.tq = tq  # workers task queue
         self.rq = rq  # workers result queue
 
