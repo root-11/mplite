@@ -8,10 +8,10 @@ import queue
 from itertools import count
 
 
-major, minor, patch = 1, 2, 4
+major, minor, patch = 1, 2, 5
 __version_info__ = (major, minor, patch)
 __version__ = '.'.join(str(i) for i in __version_info__)
-default_context = None if "pytest" in sys.modules else "spawn"
+default_context = "spawn"
 
 class Task(object):
     task_id_counter = count(start=1)
@@ -50,7 +50,7 @@ class Task(object):
 class Worker(object):
     def __init__(self, ctx, name, tq, rq):
         self.ctx = ctx
-        self.exit = multiprocessing.Event()
+        self.exit = ctx.Event()
         self.tq = tq  # workers task queue
         self.rq = rq  # workers result queue
 
