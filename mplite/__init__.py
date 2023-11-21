@@ -8,7 +8,7 @@ import queue
 from itertools import count
 
 
-major, minor, patch = 1, 2, 5
+major, minor, patch = 1, 2, 6
 __version_info__ = (major, minor, patch)
 __version__ = '.'.join(str(i) for i in __version_info__)
 default_context = "spawn"
@@ -48,11 +48,12 @@ class Task(object):
 
 
 class Worker(object):
-    def __init__(self, ctx, name, tq, rq):
+    def __init__(self, ctx, name, tq, rq, worker_init: Task):
         self.ctx = ctx
         self.exit = ctx.Event()
         self.tq = tq  # workers task queue
         self.rq = rq  # workers result queue
+        self.worker_init = worker_init
 
         self.process = ctx.Process(group=None, target=self.update, name=name, daemon=False)
 
@@ -67,6 +68,9 @@ class Worker(object):
         return self.process.exitcode
 
     def update(self):
+        if self.worker_init:
+            self.worker_init.f(*self.worker_init.args, **self.worker_init.kwargs)
+
         while True:
             try:
                 task = self.tq.get_nowait()
@@ -86,13 +90,17 @@ class Worker(object):
 
 
 class TaskManager(object):
-    def __init__(self, cpu_count=None, context=default_context) -> None:
+    def __init__(self, cpu_count=None, context=default_context, worker_init: Task=None) -> None:
         self._ctx = multiprocessing.get_context(context)
         self._cpus = multiprocessing.cpu_count() if cpu_count is None else cpu_count
         self.tq = self._ctx.Queue()
         self.rq = self._ctx.Queue()
         self.pool: list[Worker] = []
         self._open_tasks = 0
+
+        assert worker_init is None or isinstance(worker_init, Task)
+
+        self.worker_init = worker_init
 
     def __enter__(self):
         self.start()
@@ -103,7 +111,7 @@ class TaskManager(object):
 
     def start(self):
         for i in range(self._cpus):  # create workers
-            worker = Worker(self._ctx, name=str(i), tq=self.tq, rq=self.rq)
+            worker = Worker(self._ctx, name=str(i), tq=self.tq, rq=self.rq, worker_init=self.worker_init)
             self.pool.append(worker)
             worker.start()
         while not all(p.is_alive() for p in self.pool):
