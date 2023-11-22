@@ -6,9 +6,9 @@ import time
 from tqdm import tqdm as _tqdm
 import queue
 from itertools import count
+from multiprocessing.context import BaseContext
 
-
-major, minor, patch = 1, 2, 5
+major, minor, patch = 1, 2, 6
 __version_info__ = (major, minor, patch)
 __version__ = '.'.join(str(i) for i in __version_info__)
 default_context = "spawn"
@@ -48,11 +48,28 @@ class Task(object):
 
 
 class Worker(object):
-    def __init__(self, ctx, name, tq, rq):
+    def __init__(self, ctx: BaseContext, name: str, tq: multiprocessing.Queue, rq: multiprocessing.Queue, init: Task):
+        """
+        Worker class responsible for executing tasks in parallel, created by TaskManager.
+
+        REQUIRED
+        --------
+        ctx: BaseContext
+            Process spawning context ForkContext/SpawnContext. Note: Windows cannot fork.
+        name: str
+            Name of the worker process.
+        tq: Queue
+            Task queue
+        rq: Queue
+            Result queue
+        init: Task
+            Task executed when worker starts.
+        """
         self.ctx = ctx
         self.exit = ctx.Event()
         self.tq = tq  # workers task queue
         self.rq = rq  # workers result queue
+        self.init = init
 
         self.process = ctx.Process(group=None, target=self.update, name=name, daemon=False)
 
@@ -67,6 +84,9 @@ class Worker(object):
         return self.process.exitcode
 
     def update(self):
+        if self.init:
+            self.init.f(*self.init.args, **self.init.kwargs)
+
         while True:
             try:
                 task = self.tq.get_nowait()
@@ -86,13 +106,17 @@ class Worker(object):
 
 
 class TaskManager(object):
-    def __init__(self, cpu_count=None, context=default_context) -> None:
+    def __init__(self, cpu_count: int = None, context=default_context, worker_init: Task = None) -> None:
         self._ctx = multiprocessing.get_context(context)
         self._cpus = multiprocessing.cpu_count() if cpu_count is None else cpu_count
         self.tq = self._ctx.Queue()
         self.rq = self._ctx.Queue()
         self.pool: list[Worker] = []
         self._open_tasks = 0
+
+        assert worker_init is None or isinstance(worker_init, Task)
+
+        self.worker_init = worker_init
 
     def __enter__(self):
         self.start()
@@ -103,13 +127,13 @@ class TaskManager(object):
 
     def start(self):
         for i in range(self._cpus):  # create workers
-            worker = Worker(self._ctx, name=str(i), tq=self.tq, rq=self.rq)
+            worker = Worker(self._ctx, name=str(i), tq=self.tq, rq=self.rq, init=self.worker_init)
             self.pool.append(worker)
             worker.start()
         while not all(p.is_alive() for p in self.pool):
             time.sleep(0.01)
 
-    def execute(self, tasks, tqdm=_tqdm, pbar=None):
+    def execute(self, tasks: "list[Task]", tqdm=_tqdm, pbar: _tqdm=None):
         """
         Execute tasks using mplite
 
@@ -166,7 +190,7 @@ class TaskManager(object):
                 time.sleep(0.01)
         return results
 
-    def submit(self, task):
+    def submit(self, task: Task):
         """ permits asynchronous submission of tasks. """
         if not isinstance(task, Task):
             raise TypeError(f"expected mplite.Task, not {type(task)}")
