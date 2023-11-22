@@ -133,7 +133,7 @@ class TaskManager(object):
         while not all(p.is_alive() for p in self.pool):
             time.sleep(0.01)
 
-    def execute(self, tasks: list[Task], tqdm=_tqdm, pbar: _tqdm=None):
+    def execute(self, tasks: "list[Task]", tqdm=_tqdm, pbar: _tqdm=None):
         """
         Execute tasks using mplite
 
