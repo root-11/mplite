@@ -168,7 +168,7 @@ class TaskManager(object):
         results = [None] * task_count
 
         if pbar is None:
-            """ if pbar object was not passed, create a new tqdm compatibe object """
+            """ if pbar object was not passed, create a new tqdm compatible object """
             pbar = tqdm(total=self._open_tasks, unit='tasks')
 
         while self._open_tasks != 0:
