@@ -6,7 +6,7 @@ import time
 from tqdm import tqdm as _tqdm
 import queue
 from itertools import count
-from typing import Callable, Any, Concatenate, Union, Tuple, ParamSpec
+from typing import Callable, Any, Union, Tuple
 from multiprocessing.context import BaseContext
 
 major, minor, patch = 1, 2, 7
