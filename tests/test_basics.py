@@ -1,7 +1,7 @@
 import os
 import platform
 import signal
-from mplite import TaskManager,Task
+from mplite import TaskManager, Task, TaskChain
 import time
 import random
 
@@ -160,6 +160,49 @@ def test_task_order():
         res = [k for k, *_ in tm.execute(tasks)]
 
     assert res == list(range(10))
+
+def test_task_chain_1():
+    def foo(a):
+        return a
+
+    def post_2(prev, res):
+        assert res == 2
+
+        return Task(foo, 3)
+
+    def post_1(prev, res):
+        assert res == 1
+
+        return TaskChain(
+            Task(foo, 2),
+            post_2
+        )
+    
+    assert TaskChain(Task(foo, 1), next_task=post_1).execute() == 3
+
+def foo(a):
+    return a
+
+def test_task_chain_2():
+
+    def post_2(prev, res):
+        assert res == 2
+
+        return Task(foo, 3)
+
+    def post_1(prev, res):
+        assert res == 1
+
+        return TaskChain(
+            Task(foo, 2),
+            post_2
+        )
+    
+    tasks = [TaskChain(Task(foo, 1), next_task=post_1) for _ in range(5)]
+    with TaskManager(len(tasks)) as tm:
+        res = tm.execute(tasks)
+
+    assert res == [3, 3, 3, 3, 3]
 
 if __name__ == "__main__":
     test_task_order()
