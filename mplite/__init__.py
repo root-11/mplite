@@ -313,13 +313,16 @@ class TaskManager(object):
 
 
 def pickle_exception(e: Exception):
+    print(e)
     if e.__traceback__ is not None:
         tback = pklex.pickle_traceback(e.__traceback__)
         e.__traceback__ = None
     else:
         tback = None
 
-    fn_ex, (ex_cls, ex_txt, ex_rsn, _) = pklex.pickle_exception(e)
+    pkld = pklex.pickle_exception(e)
+    print(pkld)
+    fn_ex, (ex_cls, ex_txt, ex_rsn, _) = pkld
 
     return fn_ex, (ex_cls, ex_txt, ex_rsn, tback)
 
