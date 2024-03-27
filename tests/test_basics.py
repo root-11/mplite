@@ -3,6 +3,7 @@ import platform
 import signal
 from mplite import TaskManager, Task, TaskChain
 import time
+import traceback
 import random
 
 def test_alpha():
@@ -203,6 +204,26 @@ def test_task_chain_2():
         res = tm.execute(tasks)
 
     assert res == [3, 3, 3, 3, 3]
+
+def task_exception(i):
+    if i == 4:
+        raise ValueError(f"my exception: {i}")
+    
+    return i
+
+def test_exception_mode():
+    tasks = [Task(task_exception, i) for i in range(10)]
+
+    with TaskManager(10, error_mode="exception") as tm:
+        try:
+            [k for k, *_ in tm.execute(tasks)]
+            assert False
+        except Exception as e:
+            assert tm.open_tasks == 0, "there should be no left-over tasks"
+            assert str(e) == "my exception: 4", "wrong exception"
+            assert isinstance(e, ValueError), "wrong exception type"
+            assert type(e.__traceback__).__name__ == "traceback", "not a traceback"
+            assert 'in task_exception\n    raise ValueError(f"my exception: {i}")\n' in traceback.format_tb(e.__traceback__)[-1], "wrong callstack"
 
 if __name__ == "__main__":
     test_task_order()
