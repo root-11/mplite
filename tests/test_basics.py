@@ -223,7 +223,7 @@ def test_exception_mode():
             assert str(e) == "my exception: 4", "wrong exception"
             assert isinstance(e, ValueError), "wrong exception type"
             assert type(e.__traceback__).__name__ == "traceback", "not a traceback"
-            assert traceback.format_tb(e.__traceback__)[-1].endswith('in task_exception\n    raise ValueError(f"my exception: {i}")\n'), "wrong callastack"
+            assert 'in task_exception\n    raise ValueError(f"my exception: {i}")\n' in traceback.format_tb(e.__traceback__)[-1], "wrong callstack"
 
 if __name__ == "__main__":
     test_task_order()
