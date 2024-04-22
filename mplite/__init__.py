@@ -10,7 +10,7 @@ from typing import Callable, Any, Union, Tuple, Literal
 from multiprocessing.context import BaseContext
 import tblib.pickling_support as pklex
 
-major, minor, patch = 1, 3, 0
+major, minor, patch = 1, 3, 1
 __version_info__ = (major, minor, patch)
 __version__ = '.'.join(str(i) for i in __version_info__)
 default_context = "spawn"
@@ -319,7 +319,7 @@ def pickle_exception(e: Exception):
     else:
         tback = None
 
-    fn_ex, (ex_cls, ex_txt, ex_rsn, _, *others) = pklex.pickle_exception(e)
+    fn_ex, (ex_cls, ex_txt, ex_rsn, _, *others), *_ = pklex.pickle_exception(e)
 
     return fn_ex, (ex_cls, ex_txt, ex_rsn, tback, *others)
 
